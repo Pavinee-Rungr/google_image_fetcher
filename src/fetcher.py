@@ -48,6 +48,10 @@ def fetch_image(keyword, total_image=10):
             scroll(browser)
 
     total = 0
+
+    if not os.path.exists('../images/{}'.format(keyword)):
+        os.makedirs('../images/{}'.format(keyword))
+
     for idx, gtag in enumerate(google_img_tag):
         try:
             c = webdriver.Chrome()
@@ -55,8 +59,7 @@ def fetch_image(keyword, total_image=10):
             c.get(url)
             image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
             img_url = image_tag.get_attribute('src')
-            # os.system('wget {} -P ./images/{}'.format(img_url, keyword))
-            os.system('wget {} -O ./images/{}/{}'.format(img_url, keyword, str(idx)))
+            os.system('wget {} -O ../images/{}/{}'.format(img_url, keyword, str(idx)))
             c.close()
             total += 1
         except:
@@ -64,6 +67,8 @@ def fetch_image(keyword, total_image=10):
             c.close()
         if total >= total_image:
             break
+
+    browser.close()
 
 
 if __name__ == '__main__':
