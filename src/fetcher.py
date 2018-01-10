@@ -5,6 +5,7 @@ import sys
 
 delay = 1 # second
 img_search_url = 'http://www.google.com/images?q={}'
+timeout_delay = 10
 
 
 def scroll(browser, delay=delay):
@@ -28,6 +29,7 @@ def click_element(browser, xpath, delay=None):
 
 def fetch_image(keyword, total_image=10):
     browser = webdriver.Chrome()
+    browser.set_page_load_timeout(timeout_delay)
     browser.get('http://www.google.com')
     click_element(browser, "//div[@id='_eEe']/a")
 
@@ -55,11 +57,12 @@ def fetch_image(keyword, total_image=10):
     for idx, gtag in enumerate(google_img_tag):
         try:
             c = webdriver.Chrome()
+            c.set_page_load_timeout(timeout_delay)
             url = gtag.get_attribute('href')
             c.get(url)
             image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
             img_url = image_tag.get_attribute('src')
-            os.system('wget {} -O ../images/{}/{}'.format(img_url, keyword, str(idx)))
+            os.system('wget {} -O "../images/{}/{}"'.format(img_url, keyword, str(idx)))
             c.close()
             total += 1
         except:
