@@ -1,4 +1,6 @@
-from selenium import webdriver
+from selenium.webdriver import Chrome
+from selenium.webdriver.chrome.options import Options
+
 import os
 import time
 import sys
@@ -6,7 +8,8 @@ import sys
 delay = 1 # second
 img_search_url = 'http://www.google.com/images?q={}'
 timeout_delay = 10
-
+chrome_options = Options()
+chrome_options.add_argument('--headless')
 
 def scroll(browser, delay=delay):
     show_more_btn = browser.find_elements_by_xpath("//input[@value='Show more results']")
@@ -28,7 +31,7 @@ def click_element(browser, xpath, delay=None):
 
 
 def fetch_image(keyword, total_image=10):
-    browser = webdriver.Chrome()
+    browser = Chrome(chrome_options=chrome_options)
     browser.set_page_load_timeout(timeout_delay)
     browser.get('http://www.google.com')
     click_element(browser, "//div[@id='_eEe']/a")
@@ -56,7 +59,7 @@ def fetch_image(keyword, total_image=10):
 
     for idx, gtag in enumerate(google_img_tag):
         try:
-            c = webdriver.Chrome()
+            c = Chrome(chrome_options=chrome_options)
             c.set_page_load_timeout(timeout_delay)
             url = gtag.get_attribute('href')
             c.get(url)

@@ -5,4 +5,4 @@ if __name__ == '__main__':
         keywords = [x.strip() for x in f.readlines()]
 
     for keyword in keywords:
-        fetch_image(keyword)
+        fetch_image(keyword, total_image=500)
