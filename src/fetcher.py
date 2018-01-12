@@ -41,7 +41,7 @@ def download_image(keyword, idx, gtag):
         c.get(url)
         image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
         img_url = image_tag.get_attribute('src')
-        os.system('wget {} -O "../images/{}/{}"'.format(img_url, keyword, str(idx)))
+        os.system('wget "{}" -O "../images/{}/{}"'.format(img_url, keyword, str(idx)))
         c.close()
         return total + 1
     except:
