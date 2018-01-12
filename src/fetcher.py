@@ -4,7 +4,10 @@ from selenium.webdriver.chrome.options import Options
 import os
 import time
 import sys
+import threading
+import traceback
 
+total = 0
 delay = 1 # second
 img_search_url = 'http://www.google.com/images?q={}'
 timeout_delay = 10
@@ -28,6 +31,24 @@ def click_element(browser, xpath, delay=None):
     element.click()
     if delay is not None:
         time.sleep(delay)
+
+
+def download_image(keyword, idx, gtag):
+    try:
+        c = Chrome(chrome_options=chrome_options)
+        c.set_page_load_timeout(timeout_delay)
+        url = gtag.get_attribute('href')
+        c.get(url)
+        image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
+        img_url = image_tag.get_attribute('src')
+        os.system('wget {} -O "../images/{}/{}"'.format(img_url, keyword, str(idx)))
+        c.close()
+        return total + 1
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        traceback.print_exc()
+        c.close()
+        return total
 
 
 def fetch_image(keyword, total_image=10):
@@ -58,19 +79,9 @@ def fetch_image(keyword, total_image=10):
         os.makedirs('../images/{}'.format(keyword))
 
     for idx, gtag in enumerate(google_img_tag):
-        try:
-            c = Chrome(chrome_options=chrome_options)
-            c.set_page_load_timeout(timeout_delay)
-            url = gtag.get_attribute('href')
-            c.get(url)
-            image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
-            img_url = image_tag.get_attribute('src')
-            os.system('wget {} -O "../images/{}/{}"'.format(img_url, keyword, str(idx)))
-            c.close()
-            total += 1
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
-            c.close()
+        t = threading.Thread(target=download_image, args=(keyword, idx, gtag))
+        t.start()
+        t.join(timeout_delay)
         if total >= total_image:
             break
 
