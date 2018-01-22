@@ -7,12 +7,14 @@ import sys
 import threading
 import traceback
 
+
 total = 0
 delay = 1 # second
 img_search_url = 'http://www.google.com/images?q={}'
 timeout_delay = 10
 chrome_options = Options()
 chrome_options.add_argument('--headless')
+
 
 def scroll(browser, delay=delay):
     show_more_btn = browser.find_elements_by_xpath("//input[@value='Show more results']")
@@ -80,8 +82,10 @@ def fetch_image(keyword, total_image=10):
 
     for idx, gtag in enumerate(google_img_tag):
         t = threading.Thread(target=download_image, args=(keyword, idx, gtag))
+        while threading.active_count() > 5:
+            time.sleep(1)
         t.start()
-        t.join(timeout_delay)
+        print('Add #', idx)
         if total >= total_image:
             break
 
