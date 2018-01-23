@@ -1,97 +1,126 @@
+import magic
+
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 
 import os
-import time
 import sys
 import threading
 import traceback
 
-
-total = 0
-delay = 1 # second
-img_search_url = 'http://www.google.com/images?q={}'
-timeout_delay = 10
-chrome_options = Options()
-chrome_options.add_argument('--headless')
+from selenium_helper import *
 
 
-def scroll(browser, delay=delay):
-    show_more_btn = browser.find_elements_by_xpath("//input[@value='Show more results']")
-    if len(show_more_btn) > 0:
-        try:
-            show_more_btn[0].click()
-        except:
-            browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    else:
-        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(delay)
+class Fetcher:
 
+    GOOGLE_IMAGE_SEARCH_URL = 'http://www.google.com/images?q{}'
 
-def click_element(browser, xpath, delay=None):
-    element = browser.find_element_by_xpath(xpath)
-    element.click()
-    if delay is not None:
-        time.sleep(delay)
+    MAX_THREAD = 3
+    MAX_TRY = 2
+    TIMEOUT_DELAY = 10
+    ACTION_DELAY = 1
+    LOCK = threading.Lock()
 
+    def __init__(self,
+                 headless=True):
+        self.chrome_options = Options()
+        if headless:
+            self.chrome_options.add_argument('--headless')
+        self.counter = 0
 
-def download_image(keyword, idx, gtag):
-    try:
-        c = Chrome(chrome_options=chrome_options)
-        c.set_page_load_timeout(timeout_delay)
-        url = gtag.get_attribute('href')
-        c.get(url)
-        image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
-        img_url = image_tag.get_attribute('src')
-        os.system('wget --tries=2 --timeout=20 "{}" -O "../images/{}/{}"'.format(img_url, keyword, str(idx)))
-        c.close()
-        return total + 1
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
-        traceback.print_exc()
-        c.close()
-        return total
+    @staticmethod
+    def set_max_thread(max_thread):
+        Fetcher.MAX_THREAD = max_thread
 
-
-def fetch_image(keyword, total_image=10):
-    browser = Chrome(chrome_options=chrome_options)
-    browser.set_page_load_timeout(timeout_delay)
-    browser.get('http://www.google.com')
-    click_element(browser, "//div[@id='_eEe']/a")
-
-    browser.get(img_search_url.format(keyword))
-
-    click_element(browser, "//a[@id='hdtb-tls']", delay) # tools button
-    click_element(browser, "//div[@class='hdtb-mn-hd']", delay) # size button
-    click_element(browser, "//li[@id='isz_m']", delay) # size medium button
-
-    total_img = 0
-    while True:
-        google_img_tag = browser.find_elements_by_xpath("//div[@id='rg_s']/div/a")
-        if total_img == len(google_img_tag):
-            break
+    def counting(self, reverse=False):
+        Fetcher.LOCK.acquire()
+        if reverse:
+            self.counter -= 1
         else:
-            total_img = len(google_img_tag)
-        if total_img < total_image:
-            scroll(browser)
+            self.counter += 1
+        Fetcher.LOCK.release()
 
-    total = 0
+    def reset_counter(self):
+        Fetcher.LOCK.acquire()
+        self.counter = 0
+        Fetcher.LOCK.release()
 
-    if not os.path.exists('../images/{}'.format(keyword)):
-        os.makedirs('../images/{}'.format(keyword))
+    def download_image(self, keyword, idx, gtag):
+        try:
+            c = Chrome(chrome_options=self.chrome_options)
+            c.set_page_load_timeout(Fetcher.TIMEOUT_DELAY)
 
-    for idx, gtag in enumerate(google_img_tag):
-        t = threading.Thread(target=download_image, args=(keyword, idx, gtag))
-        while threading.active_count() > 5:
-            time.sleep(1)
-        t.start()
-        print('Add #', idx)
-        if total >= total_image:
-            break
+            url = gtag.get_attribute('href')
+            c.get(url)
+            image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
+            img_url = image_tag.get_attribute('src')
+            output_img_path = "../images/{}/{}".format(keyword, str(idx))
+            # '-nv'
 
-    browser.close()
+            print('Downloading #', str(idx))
+            command = 'wget -nv --tries={} --timeout={} "{}" -O "{}"'\
+                .format(Fetcher.MAX_TRY,
+                        Fetcher.TIMEOUT_DELAY,
+                        img_url,
+                        output_img_path)
+            os.system(command)
+
+            print(os.path.exists(output_img_path))
+            if os.path.exists(output_img_path):
+                file_type = magic.from_file(output_img_path)
+                if file_type.split()[0] != 'JPEG':
+                    os.remove(output_img_path)
+                else:
+                    os.rename(output_img_path, output_img_path + '.jpg')
+                    self.counting()
+
+            c.close()
+        except:
+            c.close()
+            print("Unexpected error:", sys.exc_info()[0])
+            traceback.print_exc()
+
+    def fetch_image(self, keyword, total_fetch=None):
+        if keyword is None:
+            raise ValueError('keyword is required.')
+        if total_fetch is None:
+            raise ValueError('total_fetch is required.')
+
+        # Setup Main browser
+        main_browser = Chrome(chrome_options=self.chrome_options)
+        set_google_to_english(main_browser)
+        google_image_search(main_browser, keyword)
+
+        google_image_number = 0
+        while True:
+            images_tag = main_browser.find_elements_by_xpath("//div[@id='rg_s']/div/a")
+            if google_image_number == len(images_tag):
+                break
+            else:
+                google_image_number = len(images_tag)
+            if google_image_number < total_fetch:
+                scroll(main_browser)
+
+        self.counter = 0
+
+        # create keyword dir if not exist
+        if not os.path.exists('../images/{}'.format(keyword)):
+            os.makedirs('../images/{}'.format(keyword))
+
+        # fetching thread
+        for idx, img_tag in enumerate(images_tag):
+            t = threading.Thread(target=self.download_image, args=(keyword, idx, img_tag))
+            while threading.active_count() > Fetcher.MAX_THREAD:
+                time.sleep(1)
+            t.start()
+            print('Image #', idx, 'is added to queue.')
+            if self.counter >= total_fetch:
+                break
+        self.reset_counter()
+        main_browser.close()
 
 
 if __name__ == '__main__':
+    fetcher = Fetcher(headless=False)
     keyword = 'laptop'
-    fetch_image(keyword, total_image=500)
+    fetcher.fetch_image(keyword, total_fetch=5)

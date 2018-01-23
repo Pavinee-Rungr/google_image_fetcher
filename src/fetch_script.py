@@ -1,4 +1,4 @@
-from fetcher import fetch_image
+from fetcher1 import fetch_image
 from datetime import datetime
 
 if __name__ == '__main__':
