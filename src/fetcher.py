@@ -55,7 +55,6 @@ class Fetcher:
             image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
             img_url = image_tag.get_attribute('src')
             output_img_path = "../images/{}/{}".format(keyword, str(idx))
-            # '-nv'
 
             print('Downloading #', str(idx))
             command = 'wget -nv --tries={} --timeout={} "{}" -O "{}"'\
@@ -80,7 +79,12 @@ class Fetcher:
             print("Unexpected error:", sys.exc_info()[0])
             traceback.print_exc()
 
-    def fetch_image(self, keyword, total_fetch=None):
+    def fetch_image(self,
+                    keyword,
+                    total_fetch=None,
+                    advance_search=False,
+                    file_type=None,
+                    file_size=None):
         if keyword is None:
             raise ValueError('keyword is required.')
         if total_fetch is None:
@@ -89,7 +93,10 @@ class Fetcher:
         # Setup Main browser
         main_browser = Chrome(chrome_options=self.chrome_options)
         set_google_to_english(main_browser)
-        google_image_search(main_browser, keyword)
+        if advance_search:
+            google_image_advance_search(main_browser, keyword, file_type=file_type, file_size=file_size)
+        else:
+            google_image_search(main_browser, keyword)
 
         google_image_number = 0
         while True:
@@ -123,4 +130,9 @@ class Fetcher:
 if __name__ == '__main__':
     fetcher = Fetcher(headless=False)
     keyword = 'laptop'
-    fetcher.fetch_image(keyword, total_fetch=5)
+    fetcher.fetch_image(keyword,
+                        total_fetch=5,
+                        advance_search=True,
+                        file_type=FILE_TYPE.JPEG,
+                        file_size=FILE_SIZE.MEDIUM
+    )

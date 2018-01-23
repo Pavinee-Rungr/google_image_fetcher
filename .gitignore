@@ -3,3 +3,5 @@
 __pycache__/
 
 images/**
+
+src/keyword_list.txt
