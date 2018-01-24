@@ -9,6 +9,7 @@ import threading
 import traceback
 
 from selenium_helper import *
+from string_helper import random_string
 
 
 class Fetcher:
@@ -56,7 +57,7 @@ class Fetcher:
             c.get(url)
             image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
             img_url = image_tag.get_attribute('src')
-            output_img_path = "../images/{}/{}".format(keyword, str(idx))
+            output_img_path = "../images/{}/{}_{}{}".format(keyword, keyword, random_string(5), str(idx))
 
             print('Downloading #', str(idx))
             command = 'wget -nv --tries={} --timeout={} "{}" -O "{}"'\
