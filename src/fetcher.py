@@ -22,7 +22,9 @@ class Fetcher:
     LOCK = threading.Lock()
 
     def __init__(self,
+                 target_number=5,
                  headless=True):
+        self.target_number = target_number
         self.chrome_options = Options()
         if headless:
             self.chrome_options.add_argument('--headless')
@@ -64,7 +66,6 @@ class Fetcher:
                         output_img_path)
             os.system(command)
 
-            print(os.path.exists(output_img_path))
             if os.path.exists(output_img_path):
                 file_type = magic.from_file(output_img_path)
                 if file_type.split()[0] != 'JPEG':
@@ -76,19 +77,18 @@ class Fetcher:
             c.close()
         except:
             c.close()
+            print('Error on', keyword, '#{}'.format(idx))
             print("Unexpected error:", sys.exc_info()[0])
-            traceback.print_exc()
+            if self.counting() > self.target_number:
+                traceback.print_exc()
 
     def fetch_image(self,
                     keyword,
-                    total_fetch=None,
                     advance_search=False,
                     file_type=None,
                     file_size=None):
         if keyword is None:
             raise ValueError('keyword is required.')
-        if total_fetch is None:
-            raise ValueError('total_fetch is required.')
 
         # Setup Main browser
         main_browser = Chrome(chrome_options=self.chrome_options)
@@ -105,7 +105,7 @@ class Fetcher:
                 break
             else:
                 google_image_number = len(images_tag)
-            if google_image_number < total_fetch:
+            if google_image_number < self.target_number:
                 scroll(main_browser)
 
         self.counter = 0
@@ -120,8 +120,8 @@ class Fetcher:
             while threading.active_count() > Fetcher.MAX_THREAD:
                 time.sleep(1)
             t.start()
-            print('Image #', idx, 'is added to queue.')
-            if self.counter >= total_fetch:
+            # print('Image #', idx, 'is added to queue.')
+            if self.counter >= self.target_number:
                 break
         self.reset_counter()
         main_browser.close()
@@ -135,4 +135,4 @@ if __name__ == '__main__':
                         advance_search=True,
                         file_type=FILE_TYPE.JPEG,
                         file_size=FILE_SIZE.MEDIUM
-    )
+                        )
