@@ -8,8 +8,8 @@ import sys
 import threading
 import traceback
 
-from selenium_helper import *
-from string_helper import random_string
+from helper.selenium_helper import *
+from helper.string_helper import random_string
 
 
 class Fetcher:
@@ -57,7 +57,7 @@ class Fetcher:
             c.get(url)
             image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
             img_url = image_tag.get_attribute('src')
-            output_img_path = "../images/{}/{}_{}{}".format(keyword, keyword, random_string(5), str(idx))
+            output_img_path = "../images/{}/{}_{}".format(keyword, str(random_string(keyword.encode('utf-8'))), str(idx))
 
             print('Downloading #', str(idx))
             command = 'wget -nv --tries={} --timeout={} "{}" -O "{}"'\
@@ -80,7 +80,7 @@ class Fetcher:
             c.close()
             print('Error on', keyword, '#{}'.format(idx))
             print("Unexpected error:", sys.exc_info()[0])
-            if self.counting() > self.target_number:
+            if self.counter < self.target_number:
                 traceback.print_exc()
 
     def fetch_image(self,

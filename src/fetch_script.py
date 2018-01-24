@@ -2,7 +2,7 @@ import codecs
 from datetime import datetime
 
 from fetcher import Fetcher
-from selenium_helper import FILE_SIZE, FILE_TYPE
+from helper.selenium_helper import FILE_SIZE, FILE_TYPE
 
 # Setup
 HEADLESS_OPTION = True
