@@ -1,0 +1,21 @@
+category_1:
+  - keywords:
+    - keyword_1.1
+    - keyword_1.2
+    target_number: 100 # 500 is default
+    sites: # None is Default
+      - website11.com
+      - website12.com
+  - keywords:
+    - keyword_2.1
+    - keyword_2.2
+    - keyword_2.3
+    target_number: 50 # 500 is default
+    sites: # None is Default
+      - website21.com
+      - website22.com
+
+category_2:
+  - keywords:
+    - keyword_example
+    target_number: 20

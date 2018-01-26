@@ -5,3 +5,5 @@ __pycache__/
 images/**
 
 src/keyword_list.txt
+
+src/config.yaml

@@ -9,7 +9,7 @@ import threading
 import traceback
 
 from helper.selenium_helper import *
-from helper.string_helper import random_string
+from helper.string_helper import *
 
 
 class Fetcher:
@@ -48,7 +48,9 @@ class Fetcher:
         self.counter = 0
         Fetcher.LOCK.release()
 
-    def download_image(self, keyword, idx, gtag):
+    def download_image(self, keyword, idx, gtag, output_path, naming=None):
+        if naming is None:
+            naming = keyword
         try:
             c = Chrome(chrome_options=self.chrome_options)
             c.set_page_load_timeout(Fetcher.TIMEOUT_DELAY)
@@ -57,7 +59,7 @@ class Fetcher:
             c.get(url)
             image_tag = c.find_element_by_xpath("//img[@class='irc_mi']")
             img_url = image_tag.get_attribute('src')
-            output_img_path = "../images/{}/{}_{}".format(keyword, str(random_string(keyword.encode('utf-8'))), str(idx))
+            output_img_path = "{}/{}_{}".format(output_path, naming, str(idx))
 
             print('Downloading #', str(idx))
             command = 'wget -nv --tries={} --timeout={} "{}" -O "{}"'\
@@ -79,15 +81,17 @@ class Fetcher:
         except:
             c.close()
             print('Error on', keyword, '#{}'.format(idx))
-            print("Unexpected error:", sys.exc_info()[0])
+            # print("Unexpected error:", sys.exc_info()[0])
             if self.counter < self.target_number:
                 traceback.print_exc()
 
     def fetch_image(self,
                     keyword,
+                    output_path,
                     advance_search=False,
                     file_type=None,
-                    file_size=None):
+                    file_size=None,
+                    site=None):
         if keyword is None:
             raise ValueError('keyword is required.')
 
@@ -95,7 +99,7 @@ class Fetcher:
         main_browser = Chrome(chrome_options=self.chrome_options)
         set_google_to_english(main_browser)
         if advance_search:
-            google_image_advance_search(main_browser, keyword, file_type=file_type, file_size=file_size)
+            google_image_advance_search(main_browser, keyword, file_type=file_type, file_size=file_size, site=site)
         else:
             google_image_search(main_browser, keyword)
 
@@ -112,12 +116,13 @@ class Fetcher:
         self.counter = 0
 
         # create keyword dir if not exist
-        if not os.path.exists('../images/{}'.format(keyword)):
-            os.makedirs('../images/{}'.format(keyword))
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
 
         # fetching thread
+        img_name = generate_image_naming(keyword, file_type=file_type, file_size=file_size, site=site)
         for idx, img_tag in enumerate(images_tag):
-            t = threading.Thread(target=self.download_image, args=(keyword, idx, img_tag))
+            t = threading.Thread(target=self.download_image, args=(keyword, idx, img_tag, output_path, img_name))
             while threading.active_count() > Fetcher.MAX_THREAD:
                 time.sleep(1)
             t.start()

@@ -15,11 +15,18 @@ class FILE_SIZE:
     MEDIUM = 'medium'
 
 
-def click_element(browser, xpath, delay=ACTION_DELAY):
-    element = browser.find_element_by_xpath(xpath)
-    element.click()
-    if delay is not None:
-        time.sleep(delay)
+def click_element(browser, xpath, delay=ACTION_DELAY, retry=3):
+    try:
+        element = browser.find_element_by_xpath(xpath)
+        element.click()
+        if delay is not None:
+            time.sleep(delay)
+    except:
+        if retry > 0:
+            retry = retry - 1
+            click_element(browser, xpath, delay=delay, retry=retry)
+        else:
+            print("ERROR: can't click element!")
 
 
 def scroll(browser, delay=ACTION_DELAY):
@@ -39,11 +46,16 @@ def set_google_to_english(browser):
     click_element(browser, "//div[@id='_eEe']/a")
 
 
-def google_image_advance_search(browser, keyword, file_type=None, file_size=None, action_delay=1):
+def google_image_advance_search(browser, keyword, file_type=None, file_size=None, site=None, action_delay=1):
     browser.get(GOOGLE_IMAGE_ADVANCE_SEARCH_URL)
 
+    if site is not None:
+        s_keyword = "{} site:{}".format(keyword, site)
+    else:
+        s_keyword = keyword
+
     search_field = browser.find_element_by_xpath("//input[@id='_dKg']")
-    search_field.send_keys(keyword)
+    search_field.send_keys(s_keyword)
 
     if file_size is not None:
         click_element(browser, "//div[@id='imgsz_button']")
